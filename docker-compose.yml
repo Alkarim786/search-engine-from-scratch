@@ -1,0 +1,34 @@
+# `docker compose up` crawls a small slice of the Python docs (politely,
+# 1 request/second), builds the index into a named volume, then serves it
+# on http://localhost:8080.
+services:
+  indexer:
+    build: .
+    image: search-engine-from-scratch:local
+    volumes: ["index-data:/data"]
+    environment:
+      CRAWL_SEEDS: ${CRAWL_SEEDS:-https://docs.python.org/3/tutorial/}
+      CRAWL_PATH_PREFIX: ${CRAWL_PATH_PREFIX:-/3/tutorial/}
+      MAX_PAGES: ${MAX_PAGES:-100}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - crawler -max-pages "$$MAX_PAGES" -delay 1s && indexer
+    restart: "no"
+
+  server:
+    image: search-engine-from-scratch:local
+    depends_on:
+      indexer: { condition: service_completed_successfully }
+    volumes: ["index-data:/data"]
+    ports: ["8080:8080"]
+    environment:
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      QUERY_LOG: /data/queries.log
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  index-data:

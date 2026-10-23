@@ -1,0 +1,15 @@
+{
+  "stored": 870,
+  "fetched": 920,
+  "robots_blocked": 0,
+  "exact_duplicates": 47,
+  "near_duplicates": 2,
+  "non_html": 4,
+  "http_errors": 19,
+  "network_errors": 0,
+  "noindex": 1,
+  "bytes": 50641926,
+  "urls_seen": 1055,
+  "elapsed_ns": 290139292900,
+  "pages_per_second": 3.0
+}

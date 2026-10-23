@@ -1,0 +1,22 @@
+[
+  {"q": "regular expression syntax", "relevant": ["docs\\.python\\.org/3/library/re\\.html$", "docs\\.python\\.org/3/howto/regex\\.html$"]},
+  {"q": "list comprehensions", "relevant": ["docs\\.python\\.org/3/tutorial/datastructures\\.html$"]},
+  {"q": "encode and decode JSON", "relevant": ["docs\\.python\\.org/3/library/json\\.html$"]},
+  {"q": "asyncio event loop coroutines", "relevant": ["docs\\.python\\.org/3/library/asyncio-(eventloop|task)\\.html$"]},
+  {"q": "context manager with statement", "relevant": ["docs\\.python\\.org/3/library/contextlib\\.html$"]},
+  {"q": "thread synchronization locks", "relevant": ["docs\\.python\\.org/3/library/threading\\.html$"]},
+  {"q": "parse command line arguments", "relevant": ["docs\\.python\\.org/3/library/argparse\\.html$", "docs\\.python\\.org/3/howto/argparse\\.html$"]},
+  {"q": "write unit tests", "relevant": ["docs\\.python\\.org/3/library/unittest\\.html$"]},
+  {"q": "garbage collection reference counting", "relevant": ["docs\\.python\\.org/3/library/gc\\.html$", "docs\\.python\\.org/3/c-api/refcounting\\.html$"]},
+  {"q": "django model field types", "relevant": ["docs\\.djangoproject\\.com/en/5\\.2/ref/models/fields/$"]},
+  {"q": "django database migrations", "relevant": ["docs\\.djangoproject\\.com/en/5\\.2/topics/migrations/$", "docs\\.djangoproject\\.com/en/5\\.2/ref/migration-operations/$"]},
+  {"q": "django user authentication", "relevant": ["docs\\.djangoproject\\.com/en/5\\.2/topics/auth/(default/)?$"]},
+  {"q": "queryset filter lookups", "relevant": ["docs\\.djangoproject\\.com/en/5\\.2/ref/models/querysets/$", "docs\\.djangoproject\\.com/en/5\\.2/topics/db/queries/$"]},
+  {"q": "cross site request forgery protection", "relevant": ["docs\\.djangoproject\\.com/en/5\\.2/ref/csrf/$", "docs\\.djangoproject\\.com/en/5\\.2/howto/csrf/$"]},
+  {"q": "form validation errors", "relevant": ["docs\\.djangoproject\\.com/en/5\\.2/ref/forms/validation/$", "docs\\.djangoproject\\.com/en/5\\.2/topics/forms/$"]},
+  {"q": "pod lifecycle phases", "relevant": ["kubernetes\\.io/docs/concepts/workloads/pods/pod-lifecycle/$"]},
+  {"q": "persistent volume claims storage", "relevant": ["kubernetes\\.io/docs/concepts/storage/persistent-volumes/$"]},
+  {"q": "autoscale pods based on cpu", "relevant": ["kubernetes\\.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/$"]},
+  {"q": "go modules dependency management", "relevant": ["go\\.dev/doc/modules/managing-dependencies$", "go\\.dev/doc/modules/gomod-ref$"]},
+  {"q": "rust ownership and borrowing", "relevant": ["doc\\.rust-lang\\.org/book/ch04-01-what-is-ownership\\.html$", "doc\\.rust-lang\\.org/book/ch04-02-references-and-borrowing\\.html$"]}
+]

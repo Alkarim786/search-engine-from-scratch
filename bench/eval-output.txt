@@ -1,0 +1,41 @@
+20 labelled queries, 1808 docs
+
+| Configuration | P@10 | P@3 | MRR | Success@1 | Success@3 | Success@10 |
+|---|---|---|---|---|---|---|
+| BM25 (no title boost, no PageRank) | 0.145 | 0.283 | 0.713 | 0.55 | 0.80 | 0.95 |
+| BM25 + title boost 0.5 | 0.155 | 0.350 | 0.785 | 0.65 | 0.85 | 1.00 |
+| BM25 + title boost + PageRank w2=0.25 | 0.155 | 0.333 | 0.835 | 0.75 | 0.85 | 1.00 |
+| BM25 + title boost + PageRank w2=0.5 | 0.150 | 0.333 | 0.835 | 0.75 | 0.85 | 1.00 |
+| BM25 + title boost + PageRank w2=1 | 0.150 | 0.317 | 0.764 | 0.65 | 0.80 | 1.00 |
+| BM25 + title boost + PageRank w2=2 | 0.120 | 0.217 | 0.500 | 0.35 | 0.55 | 0.85 |
+| BM25 + title boost + PageRank w2=4 | 0.070 | 0.117 | 0.284 | 0.20 | 0.30 | 0.55 |
+| same as w2=0.5 but all terms required (AND) | 0.150 | 0.333 | 0.835 | 0.75 | 0.85 | 1.00 |
+
+per-query rank of first relevant result (server default ranking):
+  rank  1  "regular expression syntax"                top1: https://docs.python.org/3/howto/regex.html
+  rank  2  "list comprehensions"                      top1: https://docs.python.org/3/reference/expressions.html
+  rank  1  "encode and decode JSON"                   top1: https://docs.python.org/3/library/json.html
+  rank  1  "asyncio event loop coroutines"            top1: https://docs.python.org/3/library/asyncio-task.html
+  rank  1  "context manager with statement"           top1: https://docs.python.org/3/library/contextlib.html
+  rank  4  "thread synchronization locks"             top1: https://docs.python.org/3/library/asyncio-sync.html
+  rank  1  "parse command line arguments"             top1: https://docs.python.org/3/library/argparse.html
+  rank  2  "write unit tests"                         top1: https://docs.djangoproject.com/en/5.2/internals/contributing/writing-code/unit-tests/
+  rank  1  "garbage collection reference counting"    top1: https://docs.python.org/3/library/gc.html
+  rank  1  "django model field types"                 top1: https://docs.djangoproject.com/en/5.2/ref/models/fields/
+  rank  5  "django database migrations"               top1: https://docs.djangoproject.com/en/5.2/howto/writing-migrations/
+  rank  1  "django user authentication"               top1: https://docs.djangoproject.com/en/5.2/topics/auth/
+  rank  1  "queryset filter lookups"                  top1: https://docs.djangoproject.com/en/5.2/ref/models/querysets/
+  rank  1  "cross site request forgery protection"    top1: https://docs.djangoproject.com/en/5.2/ref/csrf/
+  rank  1  "form validation errors"                   top1: https://docs.djangoproject.com/en/5.2/ref/forms/validation/
+  rank  1  "pod lifecycle phases"                     top1: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
+  rank  1  "persistent volume claims storage"         top1: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+  rank  4  "autoscale pods based on cpu"              top1: https://kubernetes.io/docs/tasks/configure-pod-container/assign-cpu-resource/
+  rank  1  "go modules dependency management"         top1: https://go.dev/doc/modules/managing-dependencies
+  rank  1  "rust ownership and borrowing"             top1: https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html
+
+| Latency | queries | p50 | p95 | p99 | mean |
+|---|---|---|---|---|---|
+| engine only (BM25+PageRank, top 10) | 400 | 1.00 ms | 2.03 ms | 3.00 ms | 1.10 ms |
+| HTTP GET /search on loopback (snippets + JSON) | 400 | 37.24 ms | 94.08 ms | 140.83 ms | 43.12 ms |
+
+index: 1808 docs, 42305 terms, 4049673 tokens, 22.35 MB on disk map[dict.bin:600778 docs.jsonl:368486 meta.json:99 pagerank.json:39697 postings.bin:8001641 text.bin:12481567 vocab.json:857181]

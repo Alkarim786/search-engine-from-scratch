@@ -1,0 +1,12 @@
+# binaries, crawl data, indexes
+bin/
+data/
+*.exe
+*.test
+*.out
+# env / logs
+.env
+*.log
+# release artifacts
+*.bundle
+*.zip

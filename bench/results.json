@@ -1,0 +1,108 @@
+{
+  "docs": 1808,
+  "index_bytes": 22349449,
+  "index_files": {
+    "dict.bin": 600778,
+    "docs.jsonl": 368486,
+    "meta.json": 99,
+    "pagerank.json": 39697,
+    "postings.bin": 8001641,
+    "text.bin": 12481567,
+    "vocab.json": 857181
+  },
+  "latency": [
+    {
+      "label": "engine only (BM25+PageRank, top 10)",
+      "queries": 400,
+      "p50_us": 1002.6,
+      "p95_us": 2034.9,
+      "p99_us": 2996.2,
+      "mean_us": 1095.6580000000001
+    },
+    {
+      "label": "HTTP GET /search on loopback (snippets + JSON)",
+      "queries": 400,
+      "p50_us": 37241.7,
+      "p95_us": 94080.3,
+      "p99_us": 140830.5,
+      "mean_us": 43119.421999999984
+    }
+  ],
+  "quality": [
+    {
+      "config": "BM25 (no title boost, no PageRank)",
+      "precision_at_10": 0.14500000000000005,
+      "precision_at_3": 0.2833333333333333,
+      "mrr": 0.7125,
+      "success_at_1": 0.55,
+      "success_at_3": 0.8,
+      "success_at_10": 0.95
+    },
+    {
+      "config": "BM25 + title boost 0.5",
+      "precision_at_10": 0.15500000000000005,
+      "precision_at_3": 0.35,
+      "mrr": 0.7849999999999999,
+      "success_at_1": 0.65,
+      "success_at_3": 0.85,
+      "success_at_10": 1
+    },
+    {
+      "config": "BM25 + title boost + PageRank w2=0.25",
+      "precision_at_10": 0.15500000000000005,
+      "precision_at_3": 0.33333333333333326,
+      "mrr": 0.835,
+      "success_at_1": 0.75,
+      "success_at_3": 0.85,
+      "success_at_10": 1
+    },
+    {
+      "config": "BM25 + title boost + PageRank w2=0.5",
+      "precision_at_10": 0.15000000000000005,
+      "precision_at_3": 0.33333333333333326,
+      "mrr": 0.835,
+      "success_at_1": 0.75,
+      "success_at_3": 0.85,
+      "success_at_10": 1
+    },
+    {
+      "config": "BM25 + title boost + PageRank w2=1",
+      "precision_at_10": 0.15000000000000005,
+      "precision_at_3": 0.3166666666666666,
+      "mrr": 0.763888888888889,
+      "success_at_1": 0.65,
+      "success_at_3": 0.8,
+      "success_at_10": 1
+    },
+    {
+      "config": "BM25 + title boost + PageRank w2=2",
+      "precision_at_10": 0.12000000000000002,
+      "precision_at_3": 0.2166666666666667,
+      "mrr": 0.5001984126984127,
+      "success_at_1": 0.35,
+      "success_at_3": 0.55,
+      "success_at_10": 0.85
+    },
+    {
+      "config": "BM25 + title boost + PageRank w2=4",
+      "precision_at_10": 0.07,
+      "precision_at_3": 0.11666666666666665,
+      "mrr": 0.2843650793650793,
+      "success_at_1": 0.2,
+      "success_at_3": 0.3,
+      "success_at_10": 0.55
+    },
+    {
+      "config": "same as w2=0.5 but all terms required (AND)",
+      "precision_at_10": 0.15000000000000005,
+      "precision_at_3": 0.33333333333333326,
+      "mrr": 0.835,
+      "success_at_1": 0.75,
+      "success_at_3": 0.85,
+      "success_at_10": 1
+    }
+  ],
+  "queries": 20,
+  "terms": 42305,
+  "tokens": 4049673
+}

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search Engine From Scratch</title>
+<style>
+  :root { --bg:#fff; --fg:#1f2328; --muted:#59636e; --link:#0b57d0; --line:#d1d9e0; --mark:#fff3a3; --card:#f6f8fa; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --link:#79b8ff; --line:#30363d; --mark:#5a4a00; --card:#161b22; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 8px 0 16px; }
+  h1 small { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+  form { position: relative; }
+  input[type=search] { width:100%; padding:12px 14px; font-size:17px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); }
+  #sug { position:absolute; left:0; right:0; top:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px; margin-top:4px; z-index:5; display:none; overflow:hidden; }
+  #sug div { padding:8px 14px; cursor:pointer; }
+  #sug div.on, #sug div:hover { background:var(--card); }
+  #meta { color:var(--muted); font-size:14px; margin:16px 0; }
+  .r { margin: 0 0 22px; }
+  .r a.t { font-size:18px; color:var(--link); text-decoration:none; }
+  .r a.t:hover { text-decoration:underline; }
+  .r .u { color:var(--muted); font-size:13px; overflow-wrap:anywhere; }
+  .r .s { margin-top:2px; }
+  .r .sc { color:var(--muted); font-size:12px; margin-top:2px; }
+  mark { background:var(--mark); color:inherit; padding:0 1px; border-radius:2px; }
+  nav { display:flex; gap:12px; }
+  button { padding:8px 14px; border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:6px; cursor:pointer; }
+  button:disabled { opacity:.4; cursor:default; }
+  label { font-size:14px; color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Search Engine From Scratch <small id="stats"></small></h1>
+  <form id="f" autocomplete="off">
+    <input id="q" type="search" placeholder='Search… try "list comprehension" in quotes for an exact phrase' aria-label="Search" autofocus>
+    <div id="sug" role="listbox"></div>
+  </form>
+  <p><label><input type="checkbox" id="and"> require all words</label>
+     &nbsp; <label>PageRank weight <input id="pr" type="number" min="0" max="10" step="0.1" value="0.5" style="width:4.5em"></label></p>
+  <div id="meta"></div>
+  <div id="res"></div>
+  <nav><button id="prev" disabled>Previous</button><button id="next" disabled>Next</button></nav>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let page = 1, total = 0, size = 10, sugTimer, sugIdx = -1;
+
+function esc(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function search(p) {
+  const q = $('q').value.trim();
+  if (!q) return;
+  page = p; hideSug();
+  const params = new URLSearchParams({q, page, size, pr: $('pr').value || '0'});
+  if ($('and').checked) params.set('mode', 'and');
+  const r = await fetch('/search?' + params);
+  const j = await r.json();
+  if (!r.ok) { $('meta').textContent = j.error || 'error'; $('res').innerHTML = ''; return; }
+  total = j.total;
+  $('meta').textContent = `${j.total} result${j.total === 1 ? '' : 's'} in ${j.took_ms.toFixed(2)} ms`;
+  $('res').innerHTML = j.results.map(x => `
+    <div class="r">
+      <a class="t" href="${esc(x.url)}" rel="noopener">${esc(x.title || x.url)}</a>
+      <div class="u">${esc(x.url)}</div>
+      <div class="s">${x.snippet}</div>
+      <div class="sc">score ${x.score.toFixed(2)} · bm25 ${x.bm25.toFixed(2)} · pagerank ${x.pagerank.toExponential(2)}</div>
+    </div>`).join('');
+  $('prev').disabled = page <= 1;
+  $('next').disabled = page * size >= total;
+  history.replaceState(null, '', '?' + params);
+}
+
+function hideSug(){ $('sug').style.display = 'none'; sugIdx = -1; }
+async function suggest() {
+  const q = $('q').value;
+  if (!q.trim()) return hideSug();
+  const j = await (await fetch('/suggest?q=' + encodeURIComponent(q))).json();
+  const box = $('sug');
+  if (!j.suggestions.length) return hideSug();
+  box.innerHTML = j.suggestions.map(s => `<div>${esc(s)}</div>`).join('');
+  box.style.display = 'block'; sugIdx = -1;
+  [...box.children].forEach(d => d.onclick = () => { $('q').value = d.textContent; search(1); });
+}
+
+$('f').addEventListener('submit', e => { e.preventDefault(); search(1); });
+$('q').addEventListener('input', () => { clearTimeout(sugTimer); sugTimer = setTimeout(suggest, 80); });
+$('q').addEventListener('keydown', e => {
+  const items = [...$('sug').children];
+  if (!items.length || $('sug').style.display === 'none') return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    sugIdx = (sugIdx + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items.forEach((d, i) => d.classList.toggle('on', i === sugIdx));
+    $('q').value = items[sugIdx].textContent;
+  } else if (e.key === 'Escape') hideSug();
+});
+$('prev').onclick = () => search(page - 1);
+$('next').onclick = () => search(page + 1);
+document.addEventListener('click', e => { if (!$('f').contains(e.target)) hideSug(); });
+
+fetch('/stats').then(r => r.json()).then(s => {
+  $('stats').textContent = s.indexed ? `${s.docs} pages · ${s.terms} terms` : 'no index yet';
+});
+const init = new URLSearchParams(location.search);
+if (init.get('q')) { $('q').value = init.get('q'); if (init.get('pr')) $('pr').value = init.get('pr'); $('and').checked = init.get('mode') === 'and'; search(+init.get('page') || 1); }
+</script>
+</body>
+</html>

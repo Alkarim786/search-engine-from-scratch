@@ -1,0 +1,42 @@
+# Notes for Karim: Search Engine From Scratch
+
+## Resume bullets (real measured numbers)
+
+- Built a search engine in Go with no search libraries: a polite concurrent crawler (robots.txt with Crawl-delay, per-host scheduling, SimHash near-duplicate detection), a positional inverted index with delta/varint-compressed postings, BM25 + PageRank ranking, phrase queries and trie autocomplete, covered by 58 automated tests including a hand-computed BM25 value and an analytic PageRank solution.
+- Crawled and indexed 1,808 real documentation pages (Python, Django, Go, Rust, Kubernetes; 4.05 M tokens) into a 22 MB index in 14 s on a laptop CPU; server answers queries in 1.0 ms p50 / 3.0 ms p99 at the engine level (37 ms p50 end-to-end over HTTP including snippets).
+- Evaluated ranking on 20 hand-labelled queries: adding a title boost and a small PageRank prior to BM25 raised MRR from 0.713 to 0.835 and top-1 hit rate from 55% to 75%, while a weight sweep showed over-weighting PageRank collapses quality (MRR 0.284 at w=4), the reason authority is used only as a tie-breaker.
+
+## 5 likely interview questions
+
+1. **"Derive BM25. Why is it better than TF-IDF?"**
+   Start from idf = ln(1 + (N − df + 0.5)/(df + 0.5)): rare terms matter more. Then term-frequency *saturation*: `tf·(k1+1)/(tf + k1·(1 − b + b·dl/avgdl))` rises quickly then flattens at `k1+1`, so repeating a word 50 times does not beat a doc that covers more query terms. Then *length normalisation* with `b`: long docs have more chances to contain a word, so their tf is discounted (b = 0 turns it off, b = 1 is full normalisation). Point to `TestBM25Properties` (saturation, length, idf positivity) and `TestBM25TermMatchesHandComputation`. Why not TF-IDF: raw tf grows without bound and there is no length model.
+
+2. **"How does your crawler stay polite, and how did you test it?"**
+   Four layers: robots.txt (per-host cache, longest-match rules, Crawl-delay; 404 = allow, 5xx = treat as disallowed), identifying User-Agent, a minimum delay *per host* and at most one in-flight request per host (enforced in `frontier.Next`, not with `time.Sleep` in workers, so slow sites do not stall others), and caps (2 MiB body, timeouts, max pages/depth, allowlist). Tests use an `httptest` site and record request timestamps: the gap between requests must be ≥ the Crawl-delay, the disallowed path must have zero hits, and the external host must have zero hits. Also mention redirects are re-queued so they cannot bypass any of this.
+
+3. **"Explain PageRank as a Markov chain. What are dangling nodes and why 0.85?"**
+   A random surfer follows an outlink with probability d, otherwise teleports uniformly; PageRank is the stationary distribution, found by power iteration because the damped matrix is irreducible and aperiodic (teleportation guarantees it). Dangling pages have no outlinks, so their mass would leak; treat them as linking to everyone (`dangling·d/N` is added to every page each iteration), which keeps the scores summing to 1. d = 0.85 is the classic compromise: higher d follows links more faithfully but converges slower (rate ≈ d) and is more spam-sensitive. My 1,808-page graph (161 K edges) converged in 36 iterations to L1 < 1e-6. Test: the 2-node dangling graph has a closed-form answer (0.350877 / 0.649123).
+
+4. **"How are the postings stored, and how would you scale this to billions of pages?"**
+   Per term: `df`, then per doc `docID delta, tf, position deltas`, all uvarint, giving ≈ 2 bytes per token occurrence here (8.0 MB for 4.05 M tokens). Dictionary in memory, postings read with `ReadAt`. Immutable files mean no locking on reads and atomic swap of a freshly built index. To scale: *document partitioning* (each shard holds a subset of docs and a full local index; broker fans out and merges top-k; easy to add docs, queries hit all shards) vs *term partitioning* (a term lives on one shard; fewer shards touched but large postings must be shipped around, and hot terms create hotspots). Add skip lists / block-max WAND for early termination, FST for the dictionary, and multi-segment indexing with merges (LSM-style) for updates. These are in the Roadmap.
+
+5. **"How do you detect near-duplicate pages efficiently?"**
+   SimHash: hash every 3-word shingle to 64 bits, sum ±1 per bit position, take the sign; similar documents differ in few bits. To find all fingerprints within Hamming distance 3 without comparing to everything: split into 4 bands of 16 bits; by the pigeonhole principle two fingerprints within distance 3 share at least one band exactly, so look up the 4 bands in hash maps and verify candidates (`dedup.Detector`). Short pages (< 40 words) only use the exact SHA-256. In the Kubernetes crawl it dropped 37 versioned/duplicate pages.
+
+## Understand this before interviews
+
+**`internal/frontier/frontier.go`, `Next` and `Done`.** Each host has its own FIFO queue, a `next` timestamp and a `busy` flag. `Next` scans hosts, picks a ready one (non-empty, not busy, `next` ≤ now), preferring the oldest `next` so no host starves, marks it busy and returns. If none is ready it sleeps until the earliest `next` (or 2 ms if everything is busy) and rechecks. It returns "done" only when *both* the queued count and the in-flight count are zero. That second condition matters: a busy worker may still discover new links, so an empty queue alone does not mean the crawl is over. `Done(host, delay)` clears busy and sets `next = now + delay`, which is the delay applied *after* the response, not between request starts.
+
+**`internal/crawler/crawler.go`, `process`.** Order is robots → fetch → redirect handling → parse → dedup → store → enqueue links. Redirects are not followed by `http.Client` (`CheckRedirect` returns `ErrUseLastResponse`); the `Location` is canonicalised, scope-checked and `Add`ed to the frontier like any other link. Storing is under a mutex with a second `stored >= MaxPages` check, so parallel workers cannot overshoot the page cap; the first worker to hit the cap cancels the context, which makes every blocked `Next` return.
+
+**`internal/dedup`.** The four `map[uint16][]uint64` band tables are the whole trick. Without them each new page costs O(stored pages); with them, 4 lookups plus a handful of candidate checks. The `Near` result is returned before the page is recorded, so duplicates never enter the tables.
+
+**`internal/index/builder.go`, `Add`.** Positions: title tokens occupy `0..titleWords-1`, the body starts at `titleWords + 1`. Stopwords are dropped from the index but still consume position numbers (the position is the index into `Words()`), which is how `"state of the art"` can require exactly 3 words between `state` and `art`. The posting bytes for a term are appended directly as documents arrive (docIDs only increase, so delta coding is free), which is why the builder never holds a posting struct in memory. `Posting.First` (earliest position) is decoded for free and answers "is it in the title" with `First < TitleLen` without decoding every position.
+
+**`internal/search/search.go`.** Term-at-a-time scoring into a map, then a size-`k` min-heap for top-k (so a query with 900 matches does not sort 900 items). Phrase queries decode positions only when needed, intersect candidate docs, then check `pos(t_i) == pos(t_0) + offset_i` with binary search. `final = w1·BM25 + w2·ln(1 + N·PR)`: the `N·` scaling makes an average page contribute ≈ ln 2 and keeps the prior comparable across corpus sizes, whereas `ln(PR)` alone is a large negative number that would swamp BM25.
+
+**`internal/pagerank/pagerank.go`.** One pass pushes each page's rank evenly to its out-neighbours; the dangling mass is summed in the same pass and added to every page afterwards. The result is checked by the L1 change between iterations, and the function returns the iteration count, so you can quote it.
+
+**`internal/server/server.go`, `swap`.** Queries hold `RLock` for their whole duration (including snippet reads from `text.bin`), so the swap has to take the write lock, close the old index files (necessary on Windows before renaming a directory), rename the new directory into place and reopen. Queries are only blocked for the duration of two renames.
+
+**Be ready to admit:** the evaluation is 20 queries with 1–2 labelled pages each, so differences of one or two queries are noise; relevance labels were written by me; autocomplete for multi-word input is crude; the engine is lexical only (no synonyms), which explains the four queries whose relevant page was not first.
