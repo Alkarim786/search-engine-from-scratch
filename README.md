@@ -7,8 +7,6 @@ A mini Google in Go with **no search libraries**: a polite concurrent crawler, a
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)
 
-> Project 11 of Karim's 30 Days, 30 Projects series.
-
 ## Why this exists
 
 Search is the textbook "systems + algorithms" problem: you have to crawl without hurting anyone's server, store a huge sparse matrix compactly, rank by something better than keyword counts, and answer in milliseconds. This project implements each stage by hand (the only dependency is `golang.org/x/net` for HTML tokenising and charset decoding) so every design decision is visible and measurable.
@@ -272,4 +270,4 @@ testdata/site/    tiny static site used by the CI smoke test
 ```
 
 ---
-Built by [Karim](https://github.com/Alkarim786). Project 11 of Karim's 30 Days, 30 Projects series. MIT licensed.
+Built by [Karim](https://github.com/Alkarim786). MIT licensed.
